@@ -1,3 +1,4 @@
+import 'BU.dart';
 class Globals {
 
   static int  count  = 0;
@@ -8,4 +9,7 @@ class Globals {
   static int numBooked;
   static int high;
   static int activeBU;
+  static bool editingstate = false;
+  static BU selectedBU;
+  static int butrow = -1;
 }

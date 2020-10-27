@@ -18,6 +18,8 @@ class BU{
  bool bBooked;
   TimeInterval interval;
   TypeBooking type;
+  int bookingStart;
+
   int slotNumStart;
   int numSlots;
  int num;
