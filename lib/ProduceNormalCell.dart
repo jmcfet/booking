@@ -102,10 +102,12 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
       return;
     }
     //look for a existing BU within n of the row in this column tapped
-      List<BU> cells = slots.where((item) => item.entity == col && (item.slotNumStart+ item.numSlots == row  &&
-           row < item.slotNumStart + 6)).toList();
+
+      cell = slots.firstWhere((item) => item.entity == col &&
+          row < item.slotNumStart + 6,orElse: () =>null);g
+
       //if there was none found and not in editing mode then create a new BU
-      if (cells.length == 0 ){
+      if (cell == null ){
         if ( !Globals.editingstate) {
           Globals.selectedBU  =
           new BU(col, true, TypeBooking.editing, TimeInterval.hour, row, 1);
@@ -120,20 +122,8 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
 
       }
        else { //we are editting an existing BU
-        cell = cells.single ;
-
-
-        //find which slot this row is in . each slot has a range of rows eg 2-7
-        /*  colSlots.forEach((element) {
-        int butrow = element.slotNumStart + 4;
-        if (row >= element.slotNumStart &&
-            row < element.slotNumStart + element.numSlots) {
-          Globals.selectedBU = element;
-          Globals.selectedBU.type = TypeBooking.editing;
-        }
-      });
-      */
-        cell.numSlots++;
+          cell.numSlots = row -  cell.slotNumStart
+          cell.numSlots++;
       }
       refresh();
   //  });
