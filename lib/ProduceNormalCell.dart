@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'BU.dart';
 import 'globals.dart';
 import 'be.dart';
+import 'package:flutterapp/service/fileops.dart';
+import 'dart:convert';
 
 
 
@@ -52,13 +54,14 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
           BookingUnit.type == TypeBooking.editing) {
     //    Globals.butrow = BookingUnit.numSlots + 2;
         rowinSelectedUnit = row - BookingUnit.slotNumStart;
-        nameField = BookingUnit.ids[rowinSelectedUnit] == null
+        if (rowinSelectedUnit < BookingUnit.ids.length)
+            nameField = BookingUnit.ids[rowinSelectedUnit] == null
             ? ' '
             : BookingUnit.ids[rowinSelectedUnit];
 
         isSaveEnabled = false;
         int icnt = 0;
-        BookingUnit.ids.forEach((key, value) {
+        BookingUnit.ids.forEach( (value) {
           if (value.length != 0) icnt++;
         });
         if (icnt >= numRequired) isSaveEnabled = true;
@@ -75,9 +78,17 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
         }
         textColor = Colors.white;
         rowinSelectedUnit = row - BookingUnit.slotNumStart;
-        nameField = BookingUnit.ids[rowinSelectedUnit] == null
-            ? ' '
-            : BookingUnit.ids[rowinSelectedUnit];
+        try {
+          if (BookingUnit.ids != null &&
+              rowinSelectedUnit < BookingUnit.ids.length)
+            nameField = BookingUnit.ids[rowinSelectedUnit] == null
+                ? ' '
+                : BookingUnit.ids[rowinSelectedUnit];
+        }catch( e)
+  {
+       var tt =0;
+  }
+
       }
       break;
     }
@@ -104,7 +115,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
     //look for a existing BU within n of the row in this column tapped
 
       cell = slots.firstWhere((item) => item.entity == col &&
-          row < item.slotNumStart + 6,orElse: () =>null);g
+          row < item.slotNumStart + 6,orElse: () =>null);
 
       //if there was none found and not in editing mode then create a new BU
       if (cell == null ){
@@ -112,7 +123,11 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
           Globals.selectedBU  =
           new BU(col, true, TypeBooking.editing, TimeInterval.hour, row, 1);
           Globals.editingstate = true;
+          Globals.selectedBU.ids = new List<String>(4);
+          for (int ii=0;ii< 4;ii++)
+            Globals.selectedBU.ids[ii] = '';
 
+          
           //   cell = new BU(
           //          col, false, TypeBooking.Booking, TimeInterval.hour, lowrange, BEs[col].numSlots);
           slots.add(Globals.selectedBU );
@@ -122,7 +137,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
 
       }
        else { //we are editting an existing BU
-          cell.numSlots = row -  cell.slotNumStart
+          cell.numSlots = row -  cell.slotNumStart;
           cell.numSlots++;
       }
       refresh();
@@ -131,7 +146,10 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
   _saveNames(BU selectedUnit) {
  //   setState(() {
       selectedUnit.type = TypeBooking.Booked;
+      selectedUnit.bookingStart = DateTime.now().millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
       Globals.selectedBU = null;
+      FileService fileservice = new FileService();
+      fileservice.saveBUs(jsonEncode(slots));
       refresh();
  //   });
   }

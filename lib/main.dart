@@ -6,6 +6,8 @@ import 'globals.dart';
 import 'be.dart';
 import 'package:flutterapp/ProduceTimeCell.dart';
 import 'package:flutterapp/ProduceNormalCell.dart';
+import 'package:flutterapp/service/fileops.dart';
+import 'dart:convert';
 void main() {
   runApp(MyApp());
 }
@@ -57,7 +59,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<BU> slots = new List<BU>();
+  List<BU> allbookings = new List<BU>();
+  static FileService fileservice = new FileService();
   bool inputMode = true;
   List<BE> BEs = new List<BE>();
   Map reserved = new Map<int, List<int>>();
@@ -69,75 +72,48 @@ class _MyHomePageState extends State<MyHomePage> {
   double _ItemHeight = 240;
   List<Offset> bb = List<Offset>();
   int hour;
+  List<BU>   myModels;
 
-  MyHomePage() {
-    initState();
-  }
+
 
   void initState() {
+    super.initState();
     _scrollController = new ScrollController();
-    setState(() {
-      inputMode = false;
-      //  slots.add(new BU(0,true,TypeBooking.Booked,TimeInterval.hour,0,6));
-    //  for (int i = 0; i < 6; i++) {
-   //     int k = i * 6 + 1;
-        BU cell = new BU(1, true, TypeBooking.Booked, TimeInterval.hour, 5, 5);
-
-      cell.idvalues = {
-        0: 'john',
-        1: 'bob',
-        2: 'dave',
-        3: 'dave',
-        4: ' ',
-        5: ' '
-      };
-
-        DateTime parseDt1 = DateTime.now();
-        hour = parseDt1.hour;
-        cell.bookingStart = parseDt1.millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
-
-        slots.add(cell);
-  //    }
-    //  for (int i = 0; i < 6; i++) {
-       // int k = i * 6 + 1;
-        BU cell1 = new BU(2, true, TypeBooking.Booked, TimeInterval.hour, 1, 6);
-        DateTime parseDt = DateTime.now();
-    //    parseDt = parseDt.add(Duration(days: 1));
-        cell1.bookingStart = parseDt.millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
-       // var test =  DateTime.fromMillisecondsSinceEpoch(cell1.bookingStart).day;
-        slots.add(cell1);
-    //  }
 
 
-      var nn = DateTime.now();
-     var test =  DateTime.fromMicrosecondsSinceEpoch(slots[0].bookingStart).day;
-      buForToday = slots.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == DateTime.now().day).toList();
-      //    reserved = {1:  (1,2,3,4,5,6,10,11)};
-      BEs.add(new BE(2, 6)); //col 0 is used for date
-      BEs.add(new BE(0, 4));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 4));
-      BEs.add(new BE(2, 4));
-      BEs.add(new BE(2, 6));
-      BEs.add(new BE(2, 4));
-      BEs.add(new BE(2, 4));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 4));
-      reserved = new Map<int, List<int>>();
+  //  fileservice.saveBUs(jsonEncode(slots));
+    fileservice.readBUs().then((String json1) {
+      setState(() {
+           inputMode = false;
+           allbookings=(json.decode(json1) as List).map((i) =>
+            BU.fromJson(i)).toList();
+          buForToday = allbookings.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == DateTime.now().day).toList();
+           BEs.add(new BE(2, 6)); //col 0 is used for date
+           BEs.add(new BE(0, 4));
+           BEs.add(new BE(0, 6));
+           BEs.add(new BE(0, 6));
+           BEs.add(new BE(0, 4));
+           BEs.add(new BE(2, 4));
+           BEs.add(new BE(2, 6));
+           BEs.add(new BE(2, 4));
+           BEs.add(new BE(2, 4));
+           BEs.add(new BE(0, 6));
+           BEs.add(new BE(0, 6));
+           BEs.add(new BE(0, 4));
+           // we need aan function to run after the build is complete
+           WidgetsBinding.instance.addPostFrameCallback((_) => onAfterBuild());
+      });
+
+
+
     });
-    // we need aan function to run after the build is complete
-    WidgetsBinding.instance.addPostFrameCallback((_) => onAfterBuild());
+
+
   }
 
   void _toggleInput() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
+
       //    inputMode = !inputMode ;
       //inputMode = true;
     });
@@ -220,7 +196,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 //when the build is finished scroll to the nearest hour
  void  onAfterBuild(){
-  _scrollController.animateTo((hour-2) * _ItemHeight, duration: new Duration(seconds: 2), curve: Curves.ease);
+ // _scrollController.animateTo((hour-2) * _ItemHeight, duration: new Duration(seconds: 2), curve: Curves.ease);
 }
   _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
@@ -232,7 +208,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (picked != null && picked != selectedDate)
       setState(() {
         selectedDate = picked;
-        buForToday = slots.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == selectedDate.day).toList();
+        buForToday = allbookings.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == selectedDate.day).toList();
+     
       });
   }
 
@@ -249,6 +226,10 @@ class _MyHomePageState extends State<MyHomePage> {
       bu.type = TypeBooking.Booked;
       Globals.editingstate = false;
       Globals.selectedBU = null;
+      bu.bookingStart = DateTime.now().millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
+      Globals.selectedBU = null;
+
+      fileservice.saveBUs(jsonEncode(buForToday));
 
     });
   }
