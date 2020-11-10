@@ -45,4 +45,19 @@ class BU{
       _$BUFromJson(json);
   Map<String, dynamic> toJson() => _$BUToJson(this);
 
+
+   BU copy() {
+    return new BU(
+        entity=this.entity,
+        bDoubles= this.bDoubles,
+        type= this.type,
+        interval= this.interval,
+        slotNumStart= this.slotNumStart,
+        numSlots= this.numSlots,
+
+
+    );
+
+  }
+
 }

@@ -11,5 +11,6 @@ class Globals {
   static int activeBU;
   static bool editingstate = false;
   static BU selectedBU;
+  static BU lastCreatedBU;
   static int butrow = -1;
 }

@@ -73,7 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Offset> bb = List<Offset>();
   int hour;
   List<BU>   myModels;
-
+  int _value = 1;
 
 
   void initState() {
@@ -127,6 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Globals.hourrow = 1;
 
 
+
     var scaffold = new  Scaffold(
         appBar: AppBar(
           // Here we take the value from the MyHomePage object that was created by
@@ -134,14 +135,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
           actions: <Widget>[
             RaisedButton(
-            onPressed: () => _saveChanges(), // Refer step 3
-            child: Text(
-              'Book',
+              onPressed: () => _saveChanges(),
+                child: Text(
+                  'Book',
+                  style:
+                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+                color: Colors.greenAccent,
+            ),
+            RaisedButton(
+              onPressed: () async {
+             //wait for the
+                int range = await _showRangeDialog();
+                AddNewBUs();
+              }, // Refer step 3
+              child: Text(
+              'Range',
               style:
               TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              color: Colors.greenAccent,
             ),
-            color: Colors.greenAccent,
-          ),
+
             Text(
               "${selectedDate.toLocal()}".split(' ')[0],
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -198,6 +213,22 @@ class _MyHomePageState extends State<MyHomePage> {
  void  onAfterBuild(){
  // _scrollController.animateTo((hour-2) * _ItemHeight, duration: new Duration(seconds: 2), curve: Curves.ease);
 }
+  AddNewBUs(){
+
+    var sevenDaysFromNow = DateTime.now().add(new Duration(days: 7));
+    BU bu =  Globals.lastCreatedBU.copy();
+    bu.ids = new List<String>();
+    Globals.lastCreatedBU.ids.forEach((element) {bu.ids.add(element);});
+    bu.bookingStart = sevenDaysFromNow.millisecondsSinceEpoch;
+    setState(() {
+
+       allbookings.add(bu);
+
+    });
+
+   // fileservice.saveBUs(jsonEncode(allbookings));
+  }
+
   _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
       context: context,
@@ -209,7 +240,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         selectedDate = picked;
         buForToday = allbookings.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == selectedDate.day).toList();
-     
+
       });
   }
 
@@ -225,6 +256,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       bu.type = TypeBooking.Booked;
       Globals.editingstate = false;
+      Globals.lastCreatedBU = Globals.selectedBU;
       Globals.selectedBU = null;
       bu.bookingStart = DateTime.now().millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
       Globals.selectedBU = null;
@@ -233,6 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     });
   }
+
   void _showDialog() {
     // flutter defined function
     showDialog(
@@ -256,7 +289,213 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+    _showRangeDialog() async {
+     await showDialog(
+         context: context,
+         builder:  (_) => getRange(context)
+     );
+
+  }
+
+   Widget getRange(     BuildContext context) {
+     double timeDilation = 10;
+     bool _isChecked = false;
+      return Dialog(
+
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget> [
+            Text(
+              'Repeat:',
+              style: TextStyle(fontSize: 18.0, color: Colors.black),
+              textAlign: TextAlign.center,
+            ),
+            DropdownButton(
+                value: _value,
+                items: [
+                  DropdownMenuItem(
+                    child: Text("First Item"),
+                    value: 1,
+                  ),
+                  DropdownMenuItem(
+                    child: Text("Second Item"),
+                    value: 2,
+                  ),
+                  DropdownMenuItem(
+                      child: Text("Third Item"),
+                      value: 3
+                  ),
+                  DropdownMenuItem(
+                      child: Text("Fourth Item"),
+                      value: 4
+                  )
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _value = value;
+                  });
+                }),
+            RaisedButton(
+              onPressed: () {
+                Navigator.pop(context,1);
+              },
+              color: Color(0xFFfab82b),
+              child: Text(
+                'Done',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
 
 
+      );
+  }
+  bool user1,user2,user3,user4;
+  void _showTestDialog() {
+
+    showDialog(
+
+      context: context,
+      builder: (context) {
+        return StatefulBuilder( // StatefulBuilder
+          builder: (context, setState) {
+            return AlertDialog(
+              actions: <Widget>[
+                Container(
+                    width: 400,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          "Student Attendence",
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        Container(
+                          height: 2,
+                          color: Colors.black,
+                        ),
+                        SizedBox(
+                          height: 15,
+                        ),
+                        CheckboxListTile(
+                          value: true,
+                          title: Text("user1"),
+                          onChanged: (value){
+                            setState(() {
+                              user1=value;
+                            });
+                          },
+                        ),
+                        Divider(
+                          height: 10,
+                        ),
+                        CheckboxListTile(
+                          value: true,
+                          title: Text("user2"),
+                          onChanged: (value){
+                            setState(() {
+                              user2=value;
+                            });
+                          },
+                        ),
+                        Divider(
+                          height: 10,
+                        ),
+                        CheckboxListTile(
+                          value: true,
+                          title: Text("user3"),
+                          onChanged: (value){
+                            setState(() {
+                              user3=value;
+                            });
+                          },
+                        ),
+                        Divider(
+                          height: 10,
+                        ),
+                        CheckboxListTile(
+                          value: true,
+                          title: Text("user4"),
+                          onChanged: (value){
+                            setState(() {
+                              user4=value;
+                            });
+                          },
+                        ),
+                        Divider(
+                          height: 10,
+                        ),
+
+                        SizedBox(
+                          height: 5,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: <Widget>[
+                            Material(
+                              elevation: 5.0,
+                              color: Colors.blue[900],
+                              child: MaterialButton(
+                                padding: EdgeInsets.fromLTRB(
+                                    10.0, 5.0, 10.0, 5.0),
+                                onPressed: () {},
+                                child: Text("Save",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                    )),
+                              ),
+                            ),
+                            Material(
+                              elevation: 5.0,
+                              color: Colors.blue[900],
+                              child: MaterialButton(
+                                padding: EdgeInsets.fromLTRB(
+                                    10.0, 5.0, 10.0, 5.0),
+                                onPressed: () {
+                                  setState(() {
+                                    Navigator.of(context).pop();
+                                  });
+                                },
+                                child: Text("Cancel",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                    )),
+                              ),
+                            ),
+                            Material(
+                              elevation: 5.0,
+                              color: Colors.blue[900],
+                              child: MaterialButton(
+                                padding: EdgeInsets.fromLTRB(
+                                    10.0, 5.0, 10.0, 5.0),
+                                onPressed: () {},
+                                child: Text("Select All",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                    )),
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ))
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
+
 
