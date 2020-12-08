@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:autocomplete_textfield/autocomplete_textfield.dart';
+
 import 'package:flutter/material.dart';
 import 'BU.dart';
 import 'globals.dart';
@@ -68,48 +68,82 @@ class _MyHomePageState extends State<MyHomePage> {
   int court = 0;
   DateTime selectedDate = DateTime.now();
  List<BU> buForToday = new List<BU>() ;
+  List<BU> repeatingBUs = new List<BU>() ;
   ScrollController _scrollController ;
   double _ItemHeight = 240;
   List<Offset> bb = List<Offset>();
   int hour;
   List<BU>   myModels;
   int _value = 1;
+  bool adminMode = false;
 
 
-  void initState() {
+  void initState()  {
     super.initState();
     _scrollController = new ScrollController();
+    getBUS();
+  }
 
-
-  //  fileservice.saveBUs(jsonEncode(slots));
-    fileservice.readBUs().then((String json1) {
-      setState(() {
-           inputMode = false;
-           allbookings=(json.decode(json1) as List).map((i) =>
+  getBUS() async{
+    String json1 = await fileservice.readBUs();
+    inputMode = false;
+    try {
+      if (json1.startsWith('[')) {    //is this json array?
+        allbookings = (json.decode(json1) as List).map((i) =>
             BU.fromJson(i)).toList();
-          buForToday = allbookings.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == DateTime.now().day).toList();
-           BEs.add(new BE(2, 6)); //col 0 is used for date
-           BEs.add(new BE(0, 4));
-           BEs.add(new BE(0, 6));
-           BEs.add(new BE(0, 6));
-           BEs.add(new BE(0, 4));
-           BEs.add(new BE(2, 4));
-           BEs.add(new BE(2, 6));
-           BEs.add(new BE(2, 4));
-           BEs.add(new BE(2, 4));
-           BEs.add(new BE(0, 6));
-           BEs.add(new BE(0, 6));
-           BEs.add(new BE(0, 4));
-           // we need aan function to run after the build is complete
-           WidgetsBinding.instance.addPostFrameCallback((_) => onAfterBuild());
-      });
+        buForToday = allbookings.where((element) =>
+        DateTime
+            .fromMillisecondsSinceEpoch(element.bookingStart)
+            .day == DateTime
+            .now()
+            .day).toList();
+      }
+      else {
+        //not a list so treat as a single object
+        BU bu = BU.fromJson(json.decode(json1));
+        if (DateTime
+            .fromMillisecondsSinceEpoch(bu.bookingStart)
+            .day == DateTime
+            .now()
+            .day)
+          buForToday.add(bu);
+      }
+      //get the daily reoccuring
+      String json2 = await fileservice.readRepeatingBUs();
+      if (json2.startsWith('[')) {
+        repeatingBUs = (json.decode(json2) as List).map((i) =>
+            BU.fromJson(i)).toList();
+        buForToday.addAll(repeatingBUs);
+      }
+      else {
+        BU repeat = BU.fromJson(json.decode(json2));
+        repeatingBUs.add(repeat);
+        buForToday.add(repeat);
+      }
+    }catch (e){
+                _showDialog(e.toString());
+    }
 
 
-
+    setState(() {
+      BEs.add(new BE(2, 6)); //col 0 is used for date
+      BEs.add(new BE(0, 4));
+      BEs.add(new BE(0, 6));
+      BEs.add(new BE(0, 6));
+      BEs.add(new BE(0, 4));
+      BEs.add(new BE(2, 4));
+      BEs.add(new BE(2, 6));
+      BEs.add(new BE(2, 4));
+      BEs.add(new BE(2, 4));
+      BEs.add(new BE(0, 6));
+      BEs.add(new BE(0, 6));
+      BEs.add(new BE(0, 4));
+      // we need aan function to run after the build is complete
+      WidgetsBinding.instance.addPostFrameCallback((_) => onAfterBuild());
     });
 
-
   }
+
 
   void _toggleInput() {
     setState(() {
@@ -194,7 +228,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                    return produceUnitColumn(row,col);
                                 else {
 
-                                  return   ProduceCell( inputMode, row, col, buForToday, BEs,_toggleInput,context);;
+                                  return   ProduceCell( inputMode, row, col, buForToday, BEs,_toggleInput,context,adminMode);;
                                 }
 
                               //  }
@@ -213,8 +247,9 @@ class _MyHomePageState extends State<MyHomePage> {
  void  onAfterBuild(){
  // _scrollController.animateTo((hour-2) * _ItemHeight, duration: new Duration(seconds: 2), curve: Curves.ease);
 }
-  AddNewBUs(){
 
+
+  AddNewBUs(){
     var sevenDaysFromNow = DateTime.now().add(new Duration(days: 7));
     BU bu =  Globals.lastCreatedBU.copy();
     bu.ids = new List<String>();
@@ -237,36 +272,55 @@ class _MyHomePageState extends State<MyHomePage> {
       lastDate: DateTime(2025),
     );
     if (picked != null && picked != selectedDate)
-      setState(() {
+
         selectedDate = picked;
         buForToday = allbookings.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == selectedDate.day).toList();
+        String json2 = await fileservice.readRepeatingBUs();
 
-      });
+
+        setState(() {
+          if (json2.startsWith('[')) {
+            repeatingBUs = (json.decode(json2) as List).map((i) =>
+                BU.fromJson(i)).toList();
+            buForToday.addAll(repeatingBUs);
+          }
+          else
+            buForToday.add(BU.fromJson(json.decode(json2)));
+         });
   }
 
-  void _saveChanges() {
-    setState(() {
-      BU bu;
-      try{
-        bu =  buForToday.singleWhere((item) => item.type == TypeBooking.editing);
+   void  _saveChanges  () async {
+     BU bu;
+     try{
+       bu =  buForToday.singleWhere((item) => item.type == TypeBooking.editing);
+     }
+     catch (e) {
+       _showDialog("can only be one object in editting mode ");
+     }
+
+     bu.type = TypeBooking.Booked;
+     Globals.editingstate = false;
+     Globals.lastCreatedBU = Globals.selectedBU;
+     Globals.selectedBU = null;
+     bu.bookingStart = selectedDate.millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
+     Globals.selectedBU = null;
+
+  //  setState(() {
+
+      if (!adminMode)
+        fileservice.saveBUs(jsonEncode(buForToday));
+      else {
+         await _showRangeDialog();
+        if (_value == 1) {
+          bu.bRepeatingDaily = true;
+          repeatingBUs.add(bu);
+          fileservice.saveAdminBUs(jsonEncode(repeatingBUs));
+        }
       }
-      catch (e) {
-        _showDialog();
-      }
-
-      bu.type = TypeBooking.Booked;
-      Globals.editingstate = false;
-      Globals.lastCreatedBU = Globals.selectedBU;
-      Globals.selectedBU = null;
-      bu.bookingStart = DateTime.now().millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
-      Globals.selectedBU = null;
-
-      fileservice.saveBUs(jsonEncode(buForToday));
-
-    });
+  //  });
   }
 
-  void _showDialog() {
+  void _showDialog(String err) {
     // flutter defined function
     showDialog(
       context: context,
@@ -274,7 +328,7 @@ class _MyHomePageState extends State<MyHomePage> {
         // return object of type Dialog
         return AlertDialog(
           title: new Text("internal logic error"),
-          content: new Text("can only be one object in editting mode "),
+          content: new Text(err),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
             new FlatButton(
@@ -314,21 +368,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 value: _value,
                 items: [
                   DropdownMenuItem(
-                    child: Text("First Item"),
+                    child: Text("Daily"),
                     value: 1,
                   ),
                   DropdownMenuItem(
-                    child: Text("Second Item"),
+                    child: Text("Weekly"),
                     value: 2,
                   ),
-                  DropdownMenuItem(
-                      child: Text("Third Item"),
-                      value: 3
-                  ),
-                  DropdownMenuItem(
-                      child: Text("Fourth Item"),
-                      value: 4
-                  )
+
                 ],
                 onChanged: (value) {
                   setState(() {

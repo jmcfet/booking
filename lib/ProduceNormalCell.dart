@@ -10,7 +10,7 @@ import 'dart:convert';
 
 
 Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
-    List<BE> BEs,Function refresh,BuildContext context) {
+    List<BE> BEs,Function refresh,BuildContext context,bool adminmode) {
   List<GlobalKey> keys = new List<GlobalKey>();
   var numRequired = 4;
   double borderwidth = 1;
@@ -118,7 +118,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
           row < item.slotNumStart + 6,orElse: () =>null);
 
       //if there was none found and not in editing mode then create a new BU
-      if (cell == null ){
+      if (cell == null || cell.type == TypeBooking.Booked ){
         if ( !Globals.editingstate) {
           Globals.selectedBU  =
           new BU(col, true, TypeBooking.editing, TimeInterval.hour, row, 1);
@@ -149,7 +149,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
       selectedUnit.bookingStart = DateTime.now().millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
       Globals.selectedBU = null;
       FileService fileservice = new FileService();
-      fileservice.saveBUs(jsonEncode(slots));
+//      fileservice.saveBUs(jsonEncode(slots));
       refresh();
  //   });
   }
@@ -168,13 +168,42 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
   borderwidth = remain1 == 0 ? 2 : 1;
   GlobalKey<AutoCompleteTextFieldState<String>> key = new GlobalKey();
   keys.add(key);
-  final myController = TextEditingController();
+  var myController = TextEditingController();
   myController.text = nameField;
 
 
   var con;
 
   if (inputMode) {
+    var autocomplete = new SimpleAutoCompleteTextField(
+      key: new GlobalKey(),
+      decoration: InputDecoration(
+        fillColor: mycolor,
+        //      filled: true,
+        border: OutlineInputBorder(),
+
+      ),
+      controller: myController,
+      suggestions: suggestions,
+
+      clearOnSubmit: false,
+      textSubmitted: (text) {
+        if (text != "") {
+          if (!adminmode){
+            if (suggestions.contains(text)){
+              var tt = 0;
+            }
+          }
+
+          Globals.selectedBU.ids[rowinSelectedUnit] = text;
+          refresh();
+        }
+      },
+      onFocusChanged: (text) {
+
+      },
+    );
+   // Globals.textboxes.add(autocomplete);
     //changes are being made so we need textfields and buttons
     con = Container(
       //draw border
@@ -191,28 +220,8 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
         height: 60,
         //child is empty container or a textbox
         child: !butcell
-            ?
-        SimpleAutoCompleteTextField(
-          key: key,
-          decoration: InputDecoration(
-            fillColor: mycolor,
-            //      filled: true,
-            border: OutlineInputBorder(),
-
-          ),
-          controller: myController,
-          suggestions: suggestions,
-          //       textChanged: (text) => currentText = text,
-          clearOnSubmit: true,
-          textSubmitted: (text)
-          {
-                  if (text != "") {
-                    Globals.selectedBU.ids[rowinSelectedUnit] = text;
-                    refresh();
-                  }
-                },
-        )
-            : MaterialButton(
+            ? autocomplete
+        : MaterialButton(
           color: Colors.yellow,
           child: Text('Save'),
           onPressed:
@@ -257,12 +266,12 @@ List<String> suggestions = [
   "Quail",
   "Rabbit",
   "Salad",
-  "T-Bone Steak",
-  "Urid Dal",
-  "Vanilla",
-  "Waffles",
-  "Yam",
-  "Zest"
+  "pro",
+  "ladies Doubles",
+  "Junior Tornament",
+  "Club Open",
+  "Intermediate",
+  "Water"
 ];
 //this was created so we will know the row and column tapped
 class MyCell extends StatelessWidget {

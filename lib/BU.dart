@@ -20,10 +20,11 @@ enum TypeBooking{
 @JsonValue("Watered")Watered,
 @JsonValue("Maintainence")Maintainence
 }
+
 @JsonSerializable()
 class BU{
   int entity;
-  bool bProcessed;
+  bool bRepeatingDaily;
   bool bDoubles;
   bool bBooked;
   TimeInterval interval;
@@ -36,7 +37,7 @@ class BU{
 
 
   BU(this.entity,this.bDoubles,this.type,this.interval,this.slotNumStart,this.numSlots){
-    this.bProcessed = false;
+    this.bRepeatingDaily = false;
     this.num = 0;
     ids = new List<String>();
   }
