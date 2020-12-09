@@ -24,7 +24,12 @@ import 'package:flutter/material.dart';
    final path = await _localPath;
    return File('$path/AdminBookings.txt');
   }
-
+  Future<bool> deleteFiles () async{
+   var path = await _localPath;
+//   await File('$path/counter1.txt').delete();
+   await File('$path/AdminBookings.txt').delete();
+   return true;
+  }
   Future<File> saveBUs(String BUsJSON) async {
    debugPrint(BUsJSON);
    final file = await _localFile;

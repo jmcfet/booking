@@ -75,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int hour;
   List<BU>   myModels;
   int _value = 1;
-  bool adminMode = false;
+  bool adminMode = true;
 
 
   void initState()  {
@@ -84,46 +84,51 @@ class _MyHomePageState extends State<MyHomePage> {
     getBUS();
   }
 
-  getBUS() async{
+  getBUS() async {
     String json1 = await fileservice.readBUs();
     inputMode = false;
     try {
-      if (json1.startsWith('[')) {    //is this json array?
-        allbookings = (json.decode(json1) as List).map((i) =>
-            BU.fromJson(i)).toList();
-        buForToday = allbookings.where((element) =>
-        DateTime
-            .fromMillisecondsSinceEpoch(element.bookingStart)
-            .day == DateTime
-            .now()
-            .day).toList();
+      if (json1 != 'err') {
+        if (json1.startsWith('[')) { //is this json array?
+          allbookings = (json.decode(json1) as List).map((i) =>
+              BU.fromJson(i)).toList();
+          buForToday = allbookings.where((element) =>
+          DateTime
+              .fromMillisecondsSinceEpoch(element.bookingStart)
+              .day == DateTime
+              .now()
+              .day).toList();
+        }
+        else {
+          //not a list so treat as a single object
+          BU bu = BU.fromJson(json.decode(json1));
+          if (DateTime
+              .fromMillisecondsSinceEpoch(bu.bookingStart)
+              .day == DateTime
+              .now()
+              .day)
+            buForToday.add(bu);
+        }
       }
-      else {
-        //not a list so treat as a single object
-        BU bu = BU.fromJson(json.decode(json1));
-        if (DateTime
-            .fromMillisecondsSinceEpoch(bu.bookingStart)
-            .day == DateTime
-            .now()
-            .day)
-          buForToday.add(bu);
-      }
+
       //get the daily reoccuring
       String json2 = await fileservice.readRepeatingBUs();
-      if (json2.startsWith('[')) {
-        repeatingBUs = (json.decode(json2) as List).map((i) =>
-            BU.fromJson(i)).toList();
-        buForToday.addAll(repeatingBUs);
+      if (json2 != 'err') {
+        if (json2.startsWith('[')) {
+          repeatingBUs = (json.decode(json2) as List).map((i) =>
+              BU.fromJson(i)).toList();
+          buForToday.addAll(repeatingBUs);
+        }
+        else {
+          BU repeat = BU.fromJson(json.decode(json2));
+          repeatingBUs.add(repeat);
+          buForToday.add(repeat);
+        }
       }
-      else {
-        BU repeat = BU.fromJson(json.decode(json2));
-        repeatingBUs.add(repeat);
-        buForToday.add(repeat);
-      }
-    }catch (e){
-                _showDialog(e.toString());
     }
-
+    catch (e) {
+      _showDialog(e.toString());
+    }
 
     setState(() {
       BEs.add(new BE(2, 6)); //col 0 is used for date
@@ -205,7 +210,15 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               color: Colors.greenAccent,
             ),
-
+            RaisedButton(
+              onPressed: () => -DeleteFiles(), // Refer step 3
+              child: Text(
+                'DeleteFiles',
+                style:
+                TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              color: Colors.greenAccent,
+            ),
           ],
         ),
         body: SingleChildScrollView(
@@ -263,7 +276,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
    // fileservice.saveBUs(jsonEncode(allbookings));
   }
-
+  DeleteFiles() async
+  {
+    await fileservice.deleteFiles();
+  }
   _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
       context: context,
