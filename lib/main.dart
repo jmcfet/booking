@@ -75,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int hour;
   List<BU>   myModels;
   int _value = 1;
-  bool adminMode = true;
+  bool adminMode = false;
 
 
   void initState()  {
@@ -169,58 +169,39 @@ class _MyHomePageState extends State<MyHomePage> {
 
     var scaffold = new  Scaffold(
         appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-
+          title: Text("Court Master"),
           actions: <Widget>[
-            RaisedButton(
-              onPressed: () => _saveChanges(),
-                child: Text(
-                  'Book',
-                  style:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                ),
-                color: Colors.greenAccent,
-            ),
-            RaisedButton(
-              onPressed: () async {
-             //wait for the
-                int range = await _showRangeDialog();
-                AddNewBUs();
-              }, // Refer step 3
-              child: Text(
-              'Range',
-              style:
-              TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-              ),
-              color: Colors.greenAccent,
-            ),
-
             Text(
               "${selectedDate.toLocal()}".split(' ')[0],
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
+            IconButton(
+              icon: Icon(Icons.calendar_today_outlined),
+              tooltip: 'Date',
+              onPressed: () => _saveChanges(),
+            ), //IconButton
 
-            RaisedButton(
-              onPressed: () => _selectDate(context), // Refer step 3
-              child: Text(
-                'Select date',
-                style:
-                TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-              ),
-              color: Colors.greenAccent,
-            ),
-            RaisedButton(
-              onPressed: () => -DeleteFiles(), // Refer step 3
-              child: Text(
-                'DeleteFiles',
-                style:
-                TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-              ),
-              color: Colors.greenAccent,
-            ),
-          ],
-        ),
+            IconButton(
+              icon: Icon(Icons.save),
+              tooltip: 'Save',
+              onPressed: () => _saveChanges(),
+            ), //IconButton
+
+            IconButton(
+              icon: Icon(Icons.delete),
+              tooltip: 'Delete',
+              onPressed: () => -DeleteFiles(),
+            ), //IconButton
+          ], //<Widget>[]
+          backgroundColor: Colors.greenAccent[400],
+          elevation: 50.0,
+          leading: IconButton(
+            icon: Icon(Icons.menu),
+            tooltip: 'Menu Icon',
+            onPressed: () {},
+          ), //IconButton
+          brightness: Brightness.dark,
+        ), //AppBar
         body: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SingleChildScrollView(
@@ -278,8 +259,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   DeleteFiles() async
   {
-    await fileservice.deleteFiles();
+ //   await fileservice.deleteFiles();
+    BU selectedBU = buForToday.singleWhere((item) => item.selected == true );
+    selectedBU.selected = false;
+    setState(() {
+      buForToday.remove(selectedBU);
+      allbookings.remove(selectedBU);
+    });
   }
+
   _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
       context: context,

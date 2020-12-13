@@ -71,6 +71,8 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
       }
       if (BookingUnit.type == TypeBooking.Booked) {
         mycolor = Colors.black26;
+        if (BookingUnit.selected)
+            mycolor = Colors.amberAccent;
         //vary colors for consectively booked units
         if (BookingUnit.slotNumStart == row) Globals.numBooked++;
         if (Globals.numBooked % 2 == 0) {
@@ -85,19 +87,19 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
                 ? ' '
                 : BookingUnit.ids[rowinSelectedUnit];
         }catch( e)
-  {
-       var tt =0;
-  }
+        {
+            _showDialog(context, e.toString());
+        }
 
       }
       break;
     }
 
   }
-//user has tapped on a cell find the Booking Init that it part of
+///user has tapped on a cell find the Booking Init that it part of
   _onTapDown1(int row, int col) {
    // setState(() {
-    BU cell ;
+    BU bu ;
     int currentHour = DateTime.now().hour;
     int nrows = currentHour*4 +1;
  //   if (row < nrows) {
@@ -108,37 +110,35 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
       _showDialog(context,'must select in same column');
       return;
     }
-    if (Globals.selectedBU != null && row >= Globals.selectedBU.slotNumStart + 6){
+    if (Globals.selectedBU != null && row >= Globals.selectedBU.slotNumStart + 6 && !adminmode){
       _showDialog(context,'too long of booking');
       return;
     }
     //look for a existing BU within n of the row in this column tapped
 
-      cell = slots.firstWhere((item) => item.entity == col &&
+      bu = slots.firstWhere((item) => item.entity == col &&
           row < item.slotNumStart + 6,orElse: () =>null);
-
-      //if there was none found and not in editing mode then create a new BU
-      if (cell == null || cell.type == TypeBooking.Booked ){
-        if ( !Globals.editingstate) {
-          Globals.selectedBU  =
+    //if there was none found and not in editing mode then create a new BU
+      if (bu == null  ) {
+        if (!Globals.editingstate) {
+          Globals.selectedBU =
           new BU(col, true, TypeBooking.editing, TimeInterval.hour, row, 1);
           Globals.editingstate = true;
           Globals.selectedBU.ids = new List<String>(4);
-          for (int ii=0;ii< 4;ii++)
+          for (int ii = 0; ii < 4; ii++)
             Globals.selectedBU.ids[ii] = '';
-
-          
-          //   cell = new BU(
-          //          col, false, TypeBooking.Booking, TimeInterval.hour, lowrange, BEs[col].numSlots);
-          slots.add(Globals.selectedBU );
-        }
-        else   //TODO  add a dialog
+          slots.add(Globals.selectedBU);
+          refresh();
           return;
+        }
+      }
+      if( bu.type == TypeBooking.Booked) {
+          bu.selected = true;
 
       }
        else { //we are editting an existing BU
-          cell.numSlots = row -  cell.slotNumStart;
-          cell.numSlots++;
+          bu.numSlots = row -  bu.slotNumStart;
+          bu.numSlots++;
       }
       refresh();
   //  });
@@ -237,6 +237,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
         cellColor: mycolor,
         cellStyle: bottomstyle,
         cellTextColor: textColor);
+
   return con;
 }
 List<String> suggestions = [

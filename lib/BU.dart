@@ -33,12 +33,14 @@ class BU{
   int slotNumStart;
   int numSlots;
   int num;
+  bool selected;
   List<String>  ids ;
 
 
   BU(this.entity,this.bDoubles,this.type,this.interval,this.slotNumStart,this.numSlots){
     this.bRepeatingDaily = false;
     this.num = 0;
+    selected = false;
     ids = new List<String>();
   }
 
