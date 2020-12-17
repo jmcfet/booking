@@ -9,7 +9,7 @@ import 'dart:convert';
 
 
 
-Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
+Widget ProduceCell(bool inputMode, int row, int col, List<BU> BUs,
     List<BE> BEs,Function refresh,BuildContext context,bool adminmode) {
   List<GlobalKey> keys = new List<GlobalKey>();
   var numRequired = 4;
@@ -41,18 +41,18 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
     {
       int i =  0;
     }
-  List<BU> BUsinCol = slots.where((item) => item.entity == col).toList();
+  List<BU> BUsinCol = BUs.where((item) => item.entity == col).toList();
   //find which BU this row is in . each slot has a range of rows eg 2-7
   for (var BookingUnit in BUsinCol) {
   //  int butrow = BookingUnit.slotNumStart + 4;
-    int numSlots =  BookingUnit.numSlots;
+    int numBUs =  BookingUnit.numSlots;
     if (row >= BookingUnit.slotNumStart &&
-        row < BookingUnit.slotNumStart + numSlots) {
+        row < BookingUnit.slotNumStart + numBUs) {
       //find the containing BU for the row
       mycolor = Colors.green;
       if (BookingUnit.type == TypeBooking.Booking ||
           BookingUnit.type == TypeBooking.editing) {
-    //    Globals.butrow = BookingUnit.numSlots + 2;
+    //    Globals.butrow = BookingUnit.numBUs + 2;
         rowinSelectedUnit = row - BookingUnit.slotNumStart;
         if (rowinSelectedUnit < BookingUnit.ids.length)
             nameField = BookingUnit.ids[rowinSelectedUnit] == null
@@ -96,6 +96,17 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
     }
 
   }
+  createnewBU(){
+    if (!Globals.editingstate) {
+      Globals.UnderConstructionBU =
+      new BU(col, true, TypeBooking.editing, TimeInterval.hour, row, 1);
+      Globals.editingstate = true;
+      Globals.UnderConstructionBU.ids = new List<String>(4);
+      for (int ii = 0; ii < 4; ii++)
+        Globals.UnderConstructionBU.ids[ii] = '';
+      BUs.add(Globals.UnderConstructionBU);
+    }
+  }
 ///user has tapped on a cell find the Booking Init that it part of
   _onTapDown1(int row, int col) {
    // setState(() {
@@ -106,50 +117,52 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
  //     _showDialog(context);
  //     return;
  //   }
-    if (Globals.selectedBU != null && Globals.selectedBU.entity != col){
+    List<BU> busForCol  = BUs.where((item) => item.entity == col).toList();
+    if (Globals.UnderConstructionBU != null && Globals.UnderConstructionBU.entity != col){
       _showDialog(context,'must select in same column');
       return;
     }
-    if (Globals.selectedBU != null && row >= Globals.selectedBU.slotNumStart + 6 && !adminmode){
-      _showDialog(context,'too long of booking');
+    //no BU in this column so create a new one
+    if (busForCol.length == 0){
+      createnewBU();
+      refresh();
       return;
     }
-    //look for a existing BU within n of the row in this column tapped
+ //   if (Globals.UnderConstructionBU != null && row >= Globals.UnderConstructionBU.slotNumStart + 6 && !adminmode){
+///      _showDialog(context,'too long of booking');
+ //     return;
 
-      bu = slots.firstWhere((item) => item.entity == col &&
-          row < item.slotNumStart + 6,orElse: () =>null);
-    //if there was none found and not in editing mode then create a new BU
-      if (bu == null  ) {
-        if (!Globals.editingstate) {
-          Globals.selectedBU =
-          new BU(col, true, TypeBooking.editing, TimeInterval.hour, row, 1);
-          Globals.editingstate = true;
-          Globals.selectedBU.ids = new List<String>(4);
-          for (int ii = 0; ii < 4; ii++)
-            Globals.selectedBU.ids[ii] = '';
-          slots.add(Globals.selectedBU);
-          refresh();
-          return;
-        }
+//    if tapped an existing BU them mark as selected
+    bu = busForCol.firstWhere((item) =>  row  >  item.slotNumStart && row <  item.slotNumStart + item.numSlots,orElse: () =>null);
+    if (bu != null){
+      bu.selected = true;
+    }
+    else { //might be extending an existing
+// look for a existing BU within n of the row in this column tapped
+      bu = busForCol.firstWhere((item) => row  >  item.slotNumStart &&
+            row < item.slotNumStart + 6, orElse: () => null);
+      //if there was none found and not in editing mode then create a new BU
+      if (bu == null) {
+        createnewBU();
+        refresh();
+        return;
       }
-      if( bu.type == TypeBooking.Booked) {
-          bu.selected = true;
-
+      else { //we are editting an existing BU
+        bu.numSlots = row - bu.slotNumStart;
+        bu.numSlots++;
       }
-       else { //we are editting an existing BU
-          bu.numSlots = row -  bu.slotNumStart;
-          bu.numSlots++;
-      }
-      refresh();
+    }
+    refresh();
   //  });
   }
+
   _saveNames(BU selectedUnit) {
  //   setState(() {
       selectedUnit.type = TypeBooking.Booked;
       selectedUnit.bookingStart = DateTime.now().millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
-      Globals.selectedBU = null;
+      Globals.UnderConstructionBU = null;
       FileService fileservice = new FileService();
-//      fileservice.saveBUs(jsonEncode(slots));
+//      fileservice.saveBUs(jsonEncode(BUs));
       refresh();
  //   });
   }
@@ -195,7 +208,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
             }
           }
 
-          Globals.selectedBU.ids[rowinSelectedUnit] = text;
+          Globals.UnderConstructionBU.ids[rowinSelectedUnit] = text;
           refresh();
         }
       },
@@ -225,7 +238,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> slots,
           color: Colors.yellow,
           child: Text('Save'),
           onPressed:
-          isSaveEnabled ? () => _saveNames(Globals.selectedBU) : null,
+          isSaveEnabled ? () => _saveNames(Globals.UnderConstructionBU) : null,
         )
     );
   } else

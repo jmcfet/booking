@@ -13,7 +13,7 @@ class Globals {
   static int high;
   static int activeBU;
   static bool editingstate = false;
-  static BU selectedBU;
+  static BU UnderConstructionBU;
   static BU lastCreatedBU;
   static int butrow = -1;
   static List<MyCell> cellsinUse = new List<MyCell>();

@@ -171,14 +171,38 @@ class _MyHomePageState extends State<MyHomePage> {
         appBar: AppBar(
           title: Text("Court Master"),
           actions: <Widget>[
-            Text(
-              "${selectedDate.toLocal()}".split(' ')[0],
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+
+            Container(
+              child:Column(
+                children:[
+                  Text(
+                  "${selectedDate.toLocal()}".split(' ')[0],
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+
+                  Row(
+                    children:[
+                      IconButton(
+                        icon: Icon(Icons.save_alt),
+                        tooltip: 'prev',
+                        onPressed: () =>  _PrevDay()
+                      ), //IconButton
+
+                      IconButton(
+                        icon: Icon(Icons.add_box),
+                        tooltip: 'Next',
+                        onPressed: () =>  _NextDay(),
+                      ), //IconButton
+                    ]
+                  )
+              ]
+
+            ),
             ),
             IconButton(
               icon: Icon(Icons.calendar_today_outlined),
               tooltip: 'Date',
-              onPressed: () => _saveChanges(),
+              onPressed: () => _selectDate(context),
             ), //IconButton
 
             IconButton(
@@ -188,9 +212,9 @@ class _MyHomePageState extends State<MyHomePage> {
             ), //IconButton
 
             IconButton(
-              icon: Icon(Icons.delete),
-              tooltip: 'Delete',
-              onPressed: () => -DeleteFiles(),
+             icon: Icon(Icons.delete),
+             tooltip: 'Delete',
+            onPressed: () => -DeleteFiles(),
             ), //IconButton
           ], //<Widget>[]
           backgroundColor: Colors.greenAccent[400],
@@ -267,7 +291,18 @@ class _MyHomePageState extends State<MyHomePage> {
       allbookings.remove(selectedBU);
     });
   }
+  _NextDay(){
+    String test = selectedDate.toLocal().toString();
+    DateTime picked = selectedDate.add(Duration(days : 1));
+    ToSelectedDate(picked);
+ //   DateTime today =  DateTime.parse(selectedDate)
+  }
+  _PrevDay(){
 
+    DateTime picked = selectedDate.add(Duration(days : -1));
+    ToSelectedDate(picked);
+    //   DateTime today =  DateTime.parse(selectedDate)
+  }
   _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
       context: context,
@@ -275,24 +310,29 @@ class _MyHomePageState extends State<MyHomePage> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2025),
     );
-    if (picked != null && picked != selectedDate)
-
-        selectedDate = picked;
-        buForToday = allbookings.where((element) => DateTime.fromMillisecondsSinceEpoch(element.bookingStart).day == selectedDate.day).toList();
-        String json2 = await fileservice.readRepeatingBUs();
-
-
-        setState(() {
-          if (json2.startsWith('[')) {
-            repeatingBUs = (json.decode(json2) as List).map((i) =>
-                BU.fromJson(i)).toList();
-            buForToday.addAll(repeatingBUs);
-          }
-          else
-            buForToday.add(BU.fromJson(json.decode(json2)));
-         });
+    if (picked != null && picked != selectedDate) {
+        ToSelectedDate(picked);
+    }
   }
+  ToSelectedDate( DateTime picked) async {
+     selectedDate = picked;
+     buForToday = allbookings.where((element) =>
+     DateTime
+         .fromMillisecondsSinceEpoch(element.bookingStart)
+         .day == selectedDate.day).toList();
+   //  String json2 = await fileservice.readRepeatingBUs();
 
+
+     setState(() {
+   //    if (json2.startsWith('[')) {
+  //       repeatingBUs = (json.decode(json2) as List).map((i) =>
+   //          BU.fromJson(i)).toList();
+         buForToday.addAll(repeatingBUs);
+    //   }
+    //   else
+     //    buForToday.add(BU.fromJson(json.decode(json2)));
+     });
+   }
    void  _saveChanges  () async {
      BU bu;
      try{
@@ -304,12 +344,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
      bu.type = TypeBooking.Booked;
      Globals.editingstate = false;
-     Globals.lastCreatedBU = Globals.selectedBU;
-     Globals.selectedBU = null;
+     Globals.lastCreatedBU = Globals.UnderConstructionBU;
+     Globals.UnderConstructionBU = null;
      bu.bookingStart = selectedDate.millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
-     Globals.selectedBU = null;
+     allbookings.add(bu);
+     Globals.UnderConstructionBU = null;
 
-  //  setState(() {
+
 
       if (!adminMode)
         fileservice.saveBUs(jsonEncode(buForToday));
@@ -321,7 +362,9 @@ class _MyHomePageState extends State<MyHomePage> {
           fileservice.saveAdminBUs(jsonEncode(repeatingBUs));
         }
       }
-  //  });
+
+     setState(() {
+     });
   }
 
   void _showDialog(String err) {
