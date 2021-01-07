@@ -10,7 +10,7 @@ import 'dart:convert';
 
 
 Widget ProduceCell(bool inputMode, int row, int col, List<BU> BUs,
-    List<BE> BEs,Function refresh,BuildContext context,bool adminmode) {
+    List<BE> BEs,Function refresh,BuildContext context) {
   List<GlobalKey> keys = new List<GlobalKey>();
   var numRequired = 4;
   double borderwidth = 1;
@@ -133,7 +133,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> BUs,
  //     return;
 
 //    if tapped an existing BU them mark as selected
-    bu = busForCol.firstWhere((item) =>  row  >  item.slotNumStart && row <  item.slotNumStart + item.numSlots,orElse: () =>null);
+    bu = busForCol.firstWhere((item) =>  row  >=  item.slotNumStart && row <  item.slotNumStart + item.numSlots,orElse: () =>null);
     if (bu != null){
       bu.selected = true;
     }
@@ -142,7 +142,7 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> BUs,
       bu = busForCol.firstWhere((item) => row  >  item.slotNumStart &&
             row < item.slotNumStart + 6, orElse: () => null);
       //if there was none found and not in editing mode then create a new BU
-      if (bu == null) {
+      if (bu == null || bu.type == TypeBooking.Booked) {
         createnewBU();
         refresh();
         return;
@@ -201,8 +201,8 @@ Widget ProduceCell(bool inputMode, int row, int col, List<BU> BUs,
 
       clearOnSubmit: false,
       textSubmitted: (text) {
-        if (text != "") {
-          if (!adminmode){
+        if (text.length > 0) {
+          if (!Globals.adminMode){
             if (suggestions.contains(text)){
               var tt = 0;
             }

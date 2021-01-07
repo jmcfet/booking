@@ -1,22 +1,15 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'BU.dart';
+import 'package:flutterapp/Booking.dart';
 import 'globals.dart';
-import 'be.dart';
-import 'package:flutterapp/ProduceTimeCell.dart';
-import 'package:flutterapp/ProduceNormalCell.dart';
-import 'package:flutterapp/service/fileops.dart';
-import 'dart:convert';
-void main() {
-  runApp(MyApp());
-}
 
+void main() => runApp(MyApp());
+enum FormMode { LOGIN, SIGNUP, ALL }
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         // This is the theme of your application.
@@ -29,19 +22,15 @@ class MyApp extends StatelessWidget {
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
         primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'wed 20 september'),
+      home: MyHomePage(title: 'Flutter Login'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
+  FormMode _formMode = FormMode.LOGIN;
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
   // how it looks.
@@ -58,538 +47,279 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  List<BU> allbookings = new List<BU>();
-  static FileService fileservice = new FileService();
-  bool inputMode = true;
-  List<BE> BEs = new List<BE>();
-  Map reserved = new Map<int, List<int>>();
-  int timeRows = 12; //number rows for time e.g 4 hours from 8 to 12
-  int court = 0;
-  DateTime selectedDate = DateTime.now();
- List<BU> buForToday = new List<BU>() ;
-  List<BU> repeatingBUs = new List<BU>() ;
-  ScrollController _scrollController ;
-  double _ItemHeight = 240;
-  List<Offset> bb = List<Offset>();
-  int hour;
-  List<BU>   myModels;
-  int _value = 1;
-  bool adminMode = false;
-
-
-  void initState()  {
-    super.initState();
-    _scrollController = new ScrollController();
-    getBUS();
-  }
-
-  getBUS() async {
-    String json1 = await fileservice.readBUs();
-    inputMode = false;
-    try {
-      if (json1 != 'err') {
-        if (json1.startsWith('[')) { //is this json array?
-          allbookings = (json.decode(json1) as List).map((i) =>
-              BU.fromJson(i)).toList();
-          buForToday = allbookings.where((element) =>
-          DateTime
-              .fromMillisecondsSinceEpoch(element.bookingStart)
-              .day == DateTime
-              .now()
-              .day).toList();
-        }
-        else {
-          //not a list so treat as a single object
-          BU bu = BU.fromJson(json.decode(json1));
-          if (DateTime
-              .fromMillisecondsSinceEpoch(bu.bookingStart)
-              .day == DateTime
-              .now()
-              .day)
-            buForToday.add(bu);
-        }
-      }
-
-      //get the daily reoccuring
-      String json2 = await fileservice.readRepeatingBUs();
-      if (json2 != 'err') {
-        if (json2.startsWith('[')) {
-          repeatingBUs = (json.decode(json2) as List).map((i) =>
-              BU.fromJson(i)).toList();
-          buForToday.addAll(repeatingBUs);
-        }
-        else {
-          BU repeat = BU.fromJson(json.decode(json2));
-          repeatingBUs.add(repeat);
-          buForToday.add(repeat);
-        }
-      }
-    }
-    catch (e) {
-      _showDialog(e.toString());
-    }
-
-    setState(() {
-      BEs.add(new BE(2, 6)); //col 0 is used for date
-      BEs.add(new BE(0, 4));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 4));
-      BEs.add(new BE(2, 4));
-      BEs.add(new BE(2, 6));
-      BEs.add(new BE(2, 4));
-      BEs.add(new BE(2, 4));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 6));
-      BEs.add(new BE(0, 4));
-      // we need aan function to run after the build is complete
-      WidgetsBinding.instance.addPostFrameCallback((_) => onAfterBuild());
-    });
-
-  }
-
-
-  void _toggleInput() {
-    setState(() {
-
-      //    inputMode = !inputMode ;
-      //inputMode = true;
-    });
-  }
-
-  @override
+  TextStyle style = TextStyle(fontFamily: 'Montserrat', fontSize: 20.0);
+  final myController = TextEditingController();
+  final passwordController = TextEditingController();
+  final _formKey = new GlobalKey<FormState>();
+   @override
   Widget build(BuildContext context) {
-    Globals.count = 0;
-    Globals.hour = 8;
-    Globals.halfHourRow = 3;
-    Globals.hourrow = 1;
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
 
+    Widget showEmailInput() {
+      return Padding(
+          padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
 
+          child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
 
-    var scaffold = new  Scaffold(
-        appBar: AppBar(
-          title: Text("Court Master"),
-          actions: <Widget>[
+                new Container(
+                    width:200,
+                    child:new Text(' Email:',
 
-            Container(
-              child:Column(
-                children:[
-                  Text(
-                  "${selectedDate.toLocal()}".split(' ')[0],
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+                        style: TextStyle(fontWeight:FontWeight.bold,
+                          //   background: paint,
+                        )
+                    )
+                ),
+                new Expanded(
 
-                  Row(
-                    children:[
-                      IconButton(
-                        icon: Icon(Icons.save_alt),
-                        tooltip: 'prev',
-                        onPressed: () =>  _PrevDay()
-                      ), //IconButton
+                    child: new TextFormField(
+                      maxLines: 1,
+                      initialValue: 'test',
+                      keyboardType: TextInputType.text,
+                      autofocus: false,
+                      decoration: new InputDecoration(
+                        hintText: '012345',
 
-                      IconButton(
-                        icon: Icon(Icons.add_box),
-                        tooltip: 'Next',
-                        onPressed: () =>  _NextDay(),
-                      ), //IconButton
-                    ]
-                  )
-              ]
-
-            ),
-            ),
-            IconButton(
-              icon: Icon(Icons.calendar_today_outlined),
-              tooltip: 'Date',
-              onPressed: () => _selectDate(context),
-            ), //IconButton
-
-            IconButton(
-              icon: Icon(Icons.save),
-              tooltip: 'Save',
-              onPressed: () => _saveChanges(),
-            ), //IconButton
-
-            IconButton(
-             icon: Icon(Icons.delete),
-             tooltip: 'Delete',
-            onPressed: () => -DeleteFiles(),
-            ), //IconButton
-          ], //<Widget>[]
-          backgroundColor: Colors.greenAccent[400],
-          elevation: 50.0,
-          leading: IconButton(
-            icon: Icon(Icons.menu),
-            tooltip: 'Menu Icon',
-            onPressed: () {},
-          ), //IconButton
-          brightness: Brightness.dark,
-        ), //AppBar
-        body: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SingleChildScrollView(
-             controller: _scrollController,
-            child: Row(
-              children: List.generate(
-                BEs.length,
-                    (col) =>
-                    Column(
-                      children: List.generate(timeRows * 4,
-                              (row) {
-                                if (col == 0) {
-
-                                  return ProduceTimeCell(row);
-                                }
-
-                                else if (row == 0)
-                                   return produceUnitColumn(row,col);
-                                else {
-
-                                  return   ProduceCell( inputMode, row, col, buForToday, BEs,_toggleInput,context,adminMode);;
-                                }
-
-                              //  }
-                          }
                       ),
-                    ),
-              ),
-            ),
-          ),
-        )
-    );
+                      //         validator: (val) => validateEmail(val),
+                       onSaved: (value) => Globals.member.lastName = value,
 
-    return scaffold;
-  }
-//when the build is finished scroll to the nearest hour
- void  onAfterBuild(){
- // _scrollController.animateTo((hour-2) * _ItemHeight, duration: new Duration(seconds: 2), curve: Curves.ease);
-}
-
-
-  AddNewBUs(){
-    var sevenDaysFromNow = DateTime.now().add(new Duration(days: 7));
-    BU bu =  Globals.lastCreatedBU.copy();
-    bu.ids = new List<String>();
-    Globals.lastCreatedBU.ids.forEach((element) {bu.ids.add(element);});
-    bu.bookingStart = sevenDaysFromNow.millisecondsSinceEpoch;
-    setState(() {
-
-       allbookings.add(bu);
-
-    });
-
-   // fileservice.saveBUs(jsonEncode(allbookings));
-  }
-  DeleteFiles() async
-  {
- //   await fileservice.deleteFiles();
-    BU selectedBU = buForToday.singleWhere((item) => item.selected == true );
-    selectedBU.selected = false;
-    setState(() {
-      buForToday.remove(selectedBU);
-      allbookings.remove(selectedBU);
-    });
-  }
-  _NextDay(){
-    String test = selectedDate.toLocal().toString();
-    DateTime picked = selectedDate.add(Duration(days : 1));
-    ToSelectedDate(picked);
- //   DateTime today =  DateTime.parse(selectedDate)
-  }
-  _PrevDay(){
-
-    DateTime picked = selectedDate.add(Duration(days : -1));
-    ToSelectedDate(picked);
-    //   DateTime today =  DateTime.parse(selectedDate)
-  }
-  _selectDate(BuildContext context) async {
-    final DateTime picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate, // Refer step 1
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2025),
-    );
-    if (picked != null && picked != selectedDate) {
-        ToSelectedDate(picked);
+                    )
+                )
+              ]
+          )
+      );
     }
-  }
-  ToSelectedDate( DateTime picked) async {
-     selectedDate = picked;
-     buForToday = allbookings.where((element) =>
-     DateTime
-         .fromMillisecondsSinceEpoch(element.bookingStart)
-         .day == selectedDate.day).toList();
-   //  String json2 = await fileservice.readRepeatingBUs();
+    Widget showPasswordInput() {
+      return Padding(
+          padding: const EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 0.0),
+
+          child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+
+                new Container(
+                    width:200,
+                    child:new Text(' Password:',
+
+                        style: TextStyle(fontWeight:FontWeight.bold,
+                          //   background: paint,
+                        )
+                    )
+                ),
+                new Expanded(
+
+                    child: new TextFormField(
+                      maxLines: 1,
+                      keyboardType: TextInputType.text,
+                      autofocus: false,
+                      obscureText: true,
+                      decoration: new InputDecoration(
+                        hintText: 'upper lower chars 1 cap',
+
+                      ),
+                      validator: (value) {
+                        if (value.isEmpty )
+                          return ' Password can\'t be empty';
+                        //   if (value != user.Password)
+                        //     return ' Passwords must match';
+                      },
+                      onSaved: (value) {
+
+                                    Globals.member.Password = value;
+
+                      },
+
+                    )
+                )
+              ]
+          )
+      );
+    }
+    Widget _showPrimaryButton(_formMode) {
+
+      String tt = 'Login';
+      if ( _formMode == FormMode.ALL)
+        tt = 'Update account';
+      else if ( _formMode == FormMode.SIGNUP)
+        tt = 'Create account' ;
 
 
-     setState(() {
-   //    if (json2.startsWith('[')) {
-  //       repeatingBUs = (json.decode(json2) as List).map((i) =>
-   //          BU.fromJson(i)).toList();
-         buForToday.addAll(repeatingBUs);
-    //   }
-    //   else
-     //    buForToday.add(BU.fromJson(json.decode(json2)));
-     });
-   }
-   void  _saveChanges  () async {
-     BU bu;
-     try{
-       bu =  buForToday.singleWhere((item) => item.type == TypeBooking.editing);
-     }
-     catch (e) {
-       _showDialog("can only be one object in editting mode ");
-     }
+      Text text =    new Text(tt,
+          style: new TextStyle(fontSize: 20.0, color: Colors.white));
 
-     bu.type = TypeBooking.Booked;
-     Globals.editingstate = false;
-     Globals.lastCreatedBU = Globals.UnderConstructionBU;
-     Globals.UnderConstructionBU = null;
-     bu.bookingStart = selectedDate.millisecondsSinceEpoch; // Convert DateTime into timestamp so it can be stored into firebase document
-     allbookings.add(bu);
-     Globals.UnderConstructionBU = null;
+      var but = new RaisedButton(
+          elevation: 5.0,
+          shape: new RoundedRectangleBorder(
+              borderRadius: new BorderRadius.circular(30.0)),
+          color: Colors.blue,
+          child: text,
+          onPressed: (){
+            _formKey.currentState.save();   //pick up what the user entered
+              Globals.adminMode = false;
+              if (Globals.member.lastName == 'admin' && Globals.member.Password == '42')
+                  Globals.adminMode = true;
+
+            Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context) => Booking()));}
+      );
+
+      return new Padding(
+          padding: EdgeInsets.fromLTRB(0.0, 45.0, 0.0, 0.0),
+          child: SizedBox(
+              height: 40.0,
+              child: but
+          ));
+    }
+
+    Widget _showBody1(_formMode) {
+      var items = <Widget>[];
+      if (_formMode == FormMode.LOGIN) {
+        items.add(showEmailInput());
+        items.add(showPasswordInput());
+         items.add(_showPrimaryButton(_formMode));
+      }
+      if (_formMode == FormMode.SIGNUP ) {
+   //     items.add(showTextFieldInput('First name', user.firstName,firstNameChanged));
+   //     items.add(showTextFieldInput('Last name', user.lastName,lastNameChanged));
+
+   //     items.add(showEmailInput(user));
+  //      items.add(showPasswordInput(user));
+   //     items.add(showConfirmPasswordInput(user));
+   //     items.add(showAgeInput(user));
+   //     items.add(showPhonenumInput(user));
+   //     items.add(_showPrimaryButton());
+      }
+      if (_formMode == FormMode.ALL) {
+   //     items.add(showTextFieldInput('First name', user.firstName, firstNameChanged));
+  //      items.add(showTextFieldInput('Last name', user.lastName,lastNameChanged));
+  //      items.add(showEmailInput(user));
+  //      items.add(showAgeInput(user));
+  //      items.add(showPhonenumInput(user));
+   //     items.add(showHeightInput(user,heightChanged,inchesChanged));
 
 
 
-      if (!adminMode)
-        fileservice.saveBUs(jsonEncode(buForToday));
-      else {
-         await _showRangeDialog();
-        if (_value == 1) {
-          bu.bRepeatingDaily = true;
-          repeatingBUs.add(bu);
-          fileservice.saveAdminBUs(jsonEncode(repeatingBUs));
-        }
+
       }
 
-     setState(() {
-     });
-  }
 
-  void _showDialog(String err) {
-    // flutter defined function
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("internal logic error"),
-          content: new Text(err),
-          actions: <Widget>[
-            // usually buttons at the bottom of the dialog
-            new FlatButton(
-              child: new Text("Close"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-    _showRangeDialog() async {
-     await showDialog(
-         context: context,
-         builder:  (_) => getRange(context)
-     );
+ //     if (_formMode == FormMode.SIGNUP || _formMode == FormMode.LOGIN)
+  //      items.add(_showSecondaryButton());
 
-  }
 
-   Widget getRange(     BuildContext context) {
-     double timeDilation = 10;
-     bool _isChecked = false;
-      return Dialog(
+  //    items.add(_showErrorMessage());
+      Container con = new Container(
+          padding: EdgeInsets.all(16.0),
+          child: new Form(key: _formKey, child: ListView(children: items)));
+      return con;
+    }
 
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget> [
-            Text(
-              'Repeat:',
-              style: TextStyle(fontSize: 18.0, color: Colors.black),
-              textAlign: TextAlign.center,
-            ),
-            DropdownButton(
-                value: _value,
-                items: [
-                  DropdownMenuItem(
-                    child: Text("Daily"),
-                    value: 1,
-                  ),
-                  DropdownMenuItem(
-                    child: Text("Weekly"),
-                    value: 2,
-                  ),
-
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _value = value;
-                  });
-                }),
-            RaisedButton(
-              onPressed: () {
-                Navigator.pop(context,1);
-              },
-              color: Color(0xFFfab82b),
-              child: Text(
-                'Done',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
+   // return _showBody1(FormMode.LOGIN);
+    var scaf = new Scaffold(
+        appBar: new AppBar(
+          title: new Text('Court master'),
         ),
-
-
-      );
-  }
-  bool user1,user2,user3,user4;
-  void _showTestDialog() {
-
-    showDialog(
-
-      context: context,
-      builder: (context) {
-        return StatefulBuilder( // StatefulBuilder
-          builder: (context, setState) {
-            return AlertDialog(
-              actions: <Widget>[
-                Container(
-                    width: 400,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        Text(
-                          "Student Attendence",
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        SizedBox(
-                          height: 5,
-                        ),
-                        Container(
-                          height: 2,
-                          color: Colors.black,
-                        ),
-                        SizedBox(
-                          height: 15,
-                        ),
-                        CheckboxListTile(
-                          value: true,
-                          title: Text("user1"),
-                          onChanged: (value){
-                            setState(() {
-                              user1=value;
-                            });
-                          },
-                        ),
-                        Divider(
-                          height: 10,
-                        ),
-                        CheckboxListTile(
-                          value: true,
-                          title: Text("user2"),
-                          onChanged: (value){
-                            setState(() {
-                              user2=value;
-                            });
-                          },
-                        ),
-                        Divider(
-                          height: 10,
-                        ),
-                        CheckboxListTile(
-                          value: true,
-                          title: Text("user3"),
-                          onChanged: (value){
-                            setState(() {
-                              user3=value;
-                            });
-                          },
-                        ),
-                        Divider(
-                          height: 10,
-                        ),
-                        CheckboxListTile(
-                          value: true,
-                          title: Text("user4"),
-                          onChanged: (value){
-                            setState(() {
-                              user4=value;
-                            });
-                          },
-                        ),
-                        Divider(
-                          height: 10,
-                        ),
-
-                        SizedBox(
-                          height: 5,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: <Widget>[
-                            Material(
-                              elevation: 5.0,
-                              color: Colors.blue[900],
-                              child: MaterialButton(
-                                padding: EdgeInsets.fromLTRB(
-                                    10.0, 5.0, 10.0, 5.0),
-                                onPressed: () {},
-                                child: Text("Save",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                    )),
-                              ),
-                            ),
-                            Material(
-                              elevation: 5.0,
-                              color: Colors.blue[900],
-                              child: MaterialButton(
-                                padding: EdgeInsets.fromLTRB(
-                                    10.0, 5.0, 10.0, 5.0),
-                                onPressed: () {
-                                  setState(() {
-                                    Navigator.of(context).pop();
-                                  });
-                                },
-                                child: Text("Cancel",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                    )),
-                              ),
-                            ),
-                            Material(
-                              elevation: 5.0,
-                              color: Colors.blue[900],
-                              child: MaterialButton(
-                                padding: EdgeInsets.fromLTRB(
-                                    10.0, 5.0, 10.0, 5.0),
-                                onPressed: () {},
-                                child: Text("Select All",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                    )),
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ))
-              ],
-            );
-          },
-        );
-      },
+        body: _showBody1(FormMode.LOGIN),
     );
+
+    return scaf;
   }
 }
+
+
+Widget _showSecondaryButton(_formMode) {
+  String tt  = 'Create an account';
+  if ( _formMode == FormMode.ALL)
+    tt = '';
+  else if ( _formMode == FormMode.SIGNUP)
+    tt = 'have an account? Sign in' ;
+
+  return new FlatButton(
+    child: new Text(tt,
+        style: new TextStyle(fontSize: 18.0, fontWeight: FontWeight.w300)
+    ),
+
+ //   onPressed: _formMode == FormMode.LOGIN
+ //       ? _changeFormToSignUp
+  //      : _changeFormToLogin,
+  );
+}
+
+
+void _validateAndSubmit(context)  {
+  FocusScope.of(context).requestFocus(new FocusNode());
+  /* final Auth auth = new Auth();
+  //  final authMock auth = new authMock();
+  setState(() {
+    _errorMessage = "";
+    _isLoading = true;
+  });
+  if (!_validateAndSave()) {
+    setState(() {
+      _isLoading = false;
+    });
+    return;
+  }
+  //form looks good so either do a signin or register
+  String userId = "";
+  setState(() {
+    _isLoading = false;
+  });
+  if (_formMode == FormMode.LOGIN) {
+    UserResponse resp = await auth.signIn(user.Email, user.Password);
+
+    if (resp.error == '200') {
+      user = resp.user;
+      Globals.user = user;
+      widget.onSignedIn();
+    } else {
+      setState(() {
+        _errorMessage = resp.error;
+      });
+
+    }
+  } else if ( _formMode == FormMode.SIGNUP){
+    UserResponse resp = await auth.signUp(user);
+
+    if (resp.error == '200') {
+      _changeFormToLogin();
+    } else {
+      setState(() {
+        _errorMessage = resp.error;
+      });
+    }
+
+  }
+  else {
+    UserResponse resp = await auth.Update(user);
+
+    if (resp.error == '200') {
+
+  */
+  Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context) => Booking()));
+  //  } else {
+  //     setState(() {
+  //       _errorMessage = resp.error;
+  //    });
+  //   }
+
+}
+
+
+
+
+
+
+
+
+
 
 
