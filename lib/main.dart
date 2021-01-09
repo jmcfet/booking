@@ -81,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     child: new TextFormField(
                       maxLines: 1,
-                      initialValue: 'test',
+                      initialValue: 'admin',
                       keyboardType: TextInputType.text,
                       autofocus: false,
                       decoration: new InputDecoration(

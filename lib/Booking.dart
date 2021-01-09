@@ -84,13 +84,13 @@ class _MyHomePageState extends State<Booking> {
         }
       }
 
-      //get the daily reoccuring
+      //get the . reoccuring these can be daily or weekly
       String json2 = await fileservice.readRepeatingBUs();
       if (json2 != 'err') {
         if (json2.startsWith('[')) {
           repeatingBUs = (json.decode(json2) as List).map((i) =>
               BU.fromJson(i)).toList();
-          buForToday.addAll(repeatingBUs);
+          addRepeatingBUS(DateTime.now());
         }
         else {
           BU repeat = BU.fromJson(json.decode(json2));
@@ -290,7 +290,7 @@ class _MyHomePageState extends State<Booking> {
       //    if (json2.startsWith('[')) {
       //       repeatingBUs = (json.decode(json2) as List).map((i) =>
       //          BU.fromJson(i)).toList();
-      buForToday.addAll(repeatingBUs);
+      addRepeatingBUS(selectedDate);
       //   }
       //   else
       //    buForToday.add(BU.fromJson(json.decode(json2)));
@@ -321,15 +321,32 @@ class _MyHomePageState extends State<Booking> {
       await _showRangeDialog();
       if (_value == 1) {
         bu.bRepeatingDaily = true;
+      } else if (_value == 2) {
+        bu.bRepeatingWeekly = true;
+      }
         repeatingBUs.add(bu);
         fileservice.saveAdminBUs(jsonEncode(repeatingBUs));
-      }
+
     }
 
     setState(() {
+      addRepeatingBUS(DateTime.now());
     });
   }
+  addRepeatingBUS(selectedDate)
+  {
+    List<BU> repeatingBUs1 = repeatingBUs.where((element) =>element.bRepeatingDaily== true).toList();
+    buForToday.addAll(repeatingBUs1);
+    List<BU> repeatingBUs2 = repeatingBUs.where((element) =>element.bRepeatingWeekly== true  &&
+        DateTime
+             .fromMillisecondsSinceEpoch(element.bookingStart)
+        .weekday == selectedDate.weekday
+    ).toList();
 
+    buForToday.addAll(repeatingBUs2);
+
+
+  }
   void _showDialog(String err) {
     // flutter defined function
     showDialog(

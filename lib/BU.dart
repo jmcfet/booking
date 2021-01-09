@@ -25,6 +25,7 @@ enum TypeBooking{
 class BU{
   int entity;
   bool bRepeatingDaily;
+  bool bRepeatingWeekly;
   bool bDoubles;
   bool bBooked;
   TimeInterval interval;
